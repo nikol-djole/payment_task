@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: payments_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: payments_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db_int:/docker-entrypoint-initdb.d
+
+  app:
+    image: node:20
+    container_name: payments_app
+    working_dir: /app
+    depends_on:
+      - postgres
+    environment:
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: payments_db
+      MOCK_URL: http://mock:3001
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    command: sh -c "npm install && node src/app.js"
+
+  worker:
+    image: node:20
+    container_name: payments_worker
+    working_dir: /app
+    depends_on:
+      - postgres
+      - app
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: payments_db
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    command: sh -c "npm install && node src/out_box_worker.js"
+
+  mock:
+    image: node:20
+    container_name: payments_mock
+    working_dir: /app
+    depends_on:
+      - app
+    environment:
+      PORT: 3001
+      APP_URL: http://app:3000
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    command: sh -c "npm install && node public/mock-getaway-service/mock-app.js"
+
+volumes:
+  postgres_data:
