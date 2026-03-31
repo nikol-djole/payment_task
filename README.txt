@@ -86,7 +86,7 @@ http://localhost:3001 is the mock gateway frontend, though you do not need to op
 
 Once in store just try to buy something and pay with a card. So you chose a product and click on the pay button.
 Then you will be asked to login. Use any of the usernames and passwords from the seed data. For Example:
-username: lucas-meier
+username: luca-meier
 password: cust001
 
 then you will be redirected to the payment page.
