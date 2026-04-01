@@ -79,7 +79,7 @@ PROJECT STRUCTURE
 
 HOW TO RUN
 
-go to the root folder of the project in terminal and run `docker-compose up`
+go to the root folder of the project in terminal and run `docker compose up --build`
 
 open http://localhost:3000 in your browser this will open the storefront
 http://localhost:3001 is the mock gateway frontend, though you do not need to open it, ince it will open automatically
