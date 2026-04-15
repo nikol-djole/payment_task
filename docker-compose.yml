@@ -3,69 +3,119 @@ services:
     image: postgres:16
     container_name: payments_postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: payments_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db_int:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   app:
-    image: node:20
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: payments_app
-    working_dir: /app
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
-      PORT: 3000
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: payments_db
-      MOCK_URL: http://mock:3001
+      PORT: ${APP_PORT}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      MOCK_URL: ${MOCK_URL_DOCKER}
+      SECRET_KEY: ${SECRET_KEY}
+      MAIL_USER: ${MAIL_USER}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
     ports:
-      - "3000:3000"
-    volumes:
-      - ./:/app
-      - /app/node_modules
-    command: sh -c "npm install && node src/app.js"
+      - "${APP_PORT}:${APP_PORT}"
+    command: ["node", "src/app.js"]
 
   worker:
-    image: node:20
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: payments_worker
-    working_dir: /app
     depends_on:
-      - postgres
-      - app
+      postgres:
+        condition: service_healthy
+      app:
+        condition: service_started
     environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: postgres
-      DB_NAME: payments_db
-    volumes:
-      - ./:/app
-      - /app/node_modules
-    command: sh -c "npm install && node src/out_box_worker.js"
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      MAIL_USER: ${MAIL_USER}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+    command: ["node", "src/out_box_worker.js"]
 
   mock:
-    image: node:20
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: payments_mock
-    working_dir: /app
     depends_on:
-      - app
+      app:
+        condition: service_started
     environment:
-      PORT: 3001
-      APP_URL: http://app:3000
+      SECRET_KEY: ${SECRET_KEY}
+      PORT: ${MOCK_PORT}
+      APP_URL: ${APP_URL_DOCKER}
     ports:
-      - "3001:3001"
-    volumes:
-      - ./:/app
-      - /app/node_modules
-    command: sh -c "npm install && node public/mock-getaway-service/mock-app.js"
+      - "${MOCK_PORT}:${MOCK_PORT}"
+    command: ["node", "public/mock-getaway-service/mock-app.js"]
+
+  tester:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: payments_tester
+    depends_on:
+      app:
+        condition: service_started
+      mock:
+        condition: service_started
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      PRODUCT_ID: ${PRODUCT_ID}
+      TEST_USERNAME: ${TEST_USERNAME}
+      TEST_PASSWORD: ${TEST_PASSWORD}
+      APP_URL: ${APP_URL_DOCKER}
+      MOCK_URL: ${MOCK_URL_DOCKER}
+    command: ["node", "--test", "public/tests"]
+    profiles: ["test"]
+
+  get-metrics:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: payments_get_metrics
+    depends_on:
+      app:
+        condition: service_started
+      mock:
+        condition: service_started
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      APP_URL: ${APP_URL_DOCKER}
+      MOCK_URL: ${MOCK_URL_DOCKER}
+      RUNS: ${RUNS}
+      PRODUCT_ID: ${PRODUCT_ID}
+      TEST_USERNAME: ${TEST_USERNAME}
+      TEST_PASSWORD: ${TEST_PASSWORD}
+    command: ["node", "public/get_metrics.js"]
+    profiles: ["metrics"]
 
 volumes:
   postgres_data:

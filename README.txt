@@ -101,3 +101,52 @@ Right now the mock gateway operats with a 70% probability of a normal payment.
 "else if (c >= 0.825 && c < 0.95) {..."
 
 change the probability to see the different scenarios more often or less often.
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+AFTER THE UPDATES
+
+I tried to address all the issues.
+
+The race conditions are now handled by the database.
+The ABORT is now handeld by the transactional function.
+The stock reduction has beed taken care of.
+
+The naming in the recieves and return has been changed to match the task description "X-Signature", "checkoutUrl" etc.).
+The form and amount of data which is been sent and recieved has been fit to the requrements.
+
+Unclear variable and function names have been renamed.
+Repeated code has been reduced to a helper function.
+Global variables have been corrected, or removed and solved with another approach.
+The imperative code in the frontend has been replaced with a more functional approach.
+Commented out code has been deleted.
+Error handling has been improved. (although still place for imporvment).
+
+Hardcoded HMAC secret in source code removed.
+Plaintext passwords in the database replaced with hashes.
+
+
+dockerignore added.
+gitignore was there.
+node modules excluded.
+dockerfile added.
+healthcheck added.
+env.example added.
+unit and integration tests added.
+
+Request IDs corrected.
+p95/99 added.
+lag metric corrected.
+
+runing is still as before, thus docker compose --build.
+
+for looking at the metrics, a ui exists under "localhost:3000/metrics.html"
+However for request metric calculation the requests must be recieved. Because of this after starting the app,
+in another terminal, at the project root, run "docker compose --profile metrics run --rm get-metrics". This will run the app 100 times and calculate the metrics.
+
+
+As for runing the unit and integration tests in a new terminal at the projects root run "docker compose --profile test run --rm tester".
+
+
+As for autorization, autentification and format checks, duo to time, not much has been done.
+
+

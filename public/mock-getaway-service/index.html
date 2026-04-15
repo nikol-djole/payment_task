@@ -3,257 +3,278 @@
 <head>
     <meta charset="UTF-8">
     <title>Lighting Pay</title>
-</head>
-<style>
-    body {
-        background-color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-family: Arial, sans-serif;
-    }
+    <style>
+        body {
+            background-color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
 
-    #root {
-        display: flex;
-        width: 40vw;
-        height: 95vh;
-        background-color: whitesmoke;
-        border: 1px solid orangered;
-        border-radius: 2%;
-        flex-direction: column;
+        #root {
+            display: flex;
+            width: 40vw;
+            height: 95vh;
+            background-color: whitesmoke;
+            border: 1px solid orangered;
+            border-radius: 2%;
+            flex-direction: column;
+            align-items: center;
+        }
 
-        align-items: center;
+        #root_1 {
+            width: 90%;
+            background-color: white;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid orangered;
+            border-radius: 2%;
+            padding: 10px;
+            gap: 15px;
+        }
 
+        .title {
+            color: darkblue;
+            font-size: 40px;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-style: italic;
+        }
 
-    }
+        .lil_sentances {
+            font-size: 15px;
+            font-family: Arial, sans-serif;
+            color: darkblue;
+        }
 
-    #root_1 {
-        width: 90%;
-        background-color: white;
-        height: 80%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        border: 1px solid orangered;
-        border-radius: 2%;
-        padding: 10px;
-        gap: 15px;
-    }
+        #text {
+            width: 70%;
+        }
 
-    .title {
-  color: darkblue;
-  font-size: 40px;
-  font-family: Arial, sans-serif;
-  font-weight: bold;
-        font-style: italic;
-}
+        #namee {
+            width: 70%;
+        }
 
-    .lil_sentances{
-      font-size: 15px;
-      font-family: Arial, sans-serif;
-      color: darkblue;
-  }
+        #card_type {
+            width: 70%;
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+        }
 
-    #text{
-      width: 70%
-  }
+        #expiry {
+            width: 40px;
+        }
 
-    #namee{
-      width: 70%
-  }
+        #cvv {
+            width: 40px;
+        }
 
-    #card_type{
-      width: 70%;
-      display: flex;
-      flex-direction: row;
-      gap: 10px;
-  }
+        #success_check,
+        #fail_x_1,
+        #fail_x_2 {
+            stroke-dasharray: 100;
+            stroke-dashoffset: 100;
+        }
 
-    #expiry {
-    width: 40px;
-  }
+        .draw {
+            animation: drawLine 0.8s ease forwards;
+        }
 
-    #success_check, #fail_x_1, #fail_x_2 {
-    stroke-dasharray: 100;
-    stroke-dashoffset: 100;
-}
+        .draw2 {
+            animation: drawLine 0.8s ease forwards 0.3s;
+        }
 
-    .draw {
-        animation: drawLine 0.8s ease forwards;
-    }
+        @keyframes drawLine {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
 
-    .draw2 {
-    animation: drawLine 0.8s ease forwards 0.3s;
-}
+        #root_0 {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
 
-    @keyframes drawLine {
-    to {
-        stroke-dashoffset: 0;
-    }
-}
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
 
-   #root_0{
+        .spinner {
+            width: 70px;
+            height: 70px;
+            border: 4px solid lightgray;
+            border-top: 4px solid black;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
 
-       display: none;
-       flex-direction: column;
-       justify-content: center;
-       align-items: center;
-       gap: 10px;
-   }
+        #waiting_dots {
+            font-size: 50px;
+            font-weight: bold;
+            color: darkblue;
+            height: 60px;
+            text-align: center;
+        }
 
-    @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+        #waiting_text {
+            font-size: 18px;
+            color: darkblue;
+        }
 
-    .spinner {
-  width: 70px;
-  height: 70px;
-  border: 4px solid lightgray;
-  border-top: 4px solid black;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
+        .hidden {
+            display: none !important;
+        }
 
-    #cvv {
-    width: 40px;
-  }
+        #result_box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
 
-   #waiting_dots {
-    font-size: 50px;
-    font-weight: bold;
-    color: darkblue;
-    height: 60px;
-     text-align: center;
-}
+        #result_text {
+            font-size: 22px;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            text-align: center;
+        }
 
-    #waiting_text {
-    font-size: 18px;
-    color: darkblue;
-}
+        .result-success {
+            color: green;
+        }
 
-    #waiting_text, #waiting_dots {
-    display: none;
-}
+        .result-fail {
+            color: red;
+        }
 
+        .alert_box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: red;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 9999;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
     </style>
+</head>
 <body>
 <div id="root_0">
     <h1 class="title">Welcome to Lighting Pay</h1>
     <div class="spinner"></div>
-    <h2 >Waiting for somebody to buy something ...</h2>
+    <h2>Waiting for somebody to buy something ...</h2>
 </div>
 
 <div id="root">
     <h1 class="title">Welcome to Lighting Pay</h1>
     <div id="root_1">
-    <h4 class = "lil_sentances">Please provide your payment details...</h4>
+        <h4 class="lil_sentances">Please provide your payment details...</h4>
 
-    <input id="text" placeholder="Enter your card number...">
-    <input id = "namee" placeholder="Enter Card holders name...">
-    <div id = "card_type">
-        <label for="expiry">Expiry Date:</label>
-        <input id = "expiry" placeholder="mm/yy" title="Expiry Date" maxlength="5" >
-    <label for="cvv">CVV:</label>
-    <input id = "cvv" inputmode="numeric" maxlength="3" >
+        <input id="text" placeholder="Enter your card number...">
+        <input id="namee" placeholder="Enter Card holders name...">
+
+        <div id="card_type">
+            <label for="expiry">Expiry Date:</label>
+            <input id="expiry" placeholder="mm/yy" title="Expiry Date" maxlength="5">
+            <label for="cvv">CVV:</label>
+            <input id="cvv" inputmode="numeric" maxlength="3">
+        </div>
+
+        <button id="pay">Pay</button>
+
+        <div id="waiting_box">
+            <div id="waiting_dots" class="hidden"></div>
+            <div id="waiting_text" class="hidden">Waiting for authorisation</div>
+        </div>
+
+        <div id="result_box" class="hidden">
+            <svg id="success_svg" width="120" height="120" viewBox="0 0 120 120" class="hidden">
+                <circle cx="60" cy="60" r="50" stroke="green" stroke-width="6" fill="none"></circle>
+                <path id="success_check" d="M35 62 L52 78 L85 42"
+                      stroke="green" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+
+            <svg id="fail_svg" width="120" height="120" viewBox="0 0 120 120" class="hidden">
+                <circle cx="60" cy="60" r="50" stroke="red" stroke-width="6" fill="none"></circle>
+                <path id="fail_x_1" d="M40 40 L80 80"
+                      stroke="red" stroke-width="8" fill="none" stroke-linecap="round"/>
+                <path id="fail_x_2" d="M80 40 L40 80"
+                      stroke="red" stroke-width="8" fill="none" stroke-linecap="round"/>
+            </svg>
+
+            <div id="result_text"></div>
+        </div>
     </div>
-
-    <button id="pay">Pay</button>
-    <div id="waiting_box">
-    <div id="waiting_dots"></div>
-    <div id="waiting_text">Waiting for authorisation</div>
-
-</div>
-    <div id="result_box" style="display:none; flex-direction: column; align-items: center; justify-content: center; gap: 15px; margin-top: 20px;">
-
-    <svg id="success_svg" width="120" height="120" viewBox="0 0 120 120" style="display:none;">
-        <circle cx="60" cy="60" r="50" stroke="green" stroke-width="6" fill="none"></circle>
-        <path id="success_check" d="M35 62 L52 78 L85 42"
-              stroke="green" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-
-    <svg id="fail_svg" width="120" height="120" viewBox="0 0 120 120" style="display:none;">
-        <circle cx="60" cy="60" r="50" stroke="red" stroke-width="6" fill="none"></circle>
-        <path id="fail_x_1" d="M40 40 L80 80"
-              stroke="red" stroke-width="8" fill="none" stroke-linecap="round"/>
-        <path id="fail_x_2" d="M80 40 L40 80"
-              stroke="red" stroke-width="8" fill="none" stroke-linecap="round"/>
-    </svg>
-
-    <div id="result_text" style="font-size: 22px; font-family: Arial, sans-serif; font-weight: bold; text-align: center;"></div>
 </div>
 
-</div>
-</div>
-
-</body>
 <script>
+    const mock_url = "http://localhost:3001"
+
     let payment_finished = false;
     const params = new URLSearchParams(window.location.search);
-    const pay_id = params.get("payment_id");
+    const paymentId = params.get("paymentId");
+    const gatewayPaymentId = params.get("gatewayPaymentId");
 
     window.addEventListener("beforeunload", () => {
         if (payment_finished) return;
-   navigator.sendBeacon(
-    "http://localhost:3001/payment_data_colected",
-    new Blob(
-      [JSON.stringify({ action: "abort", payment_id: pay_id })],
-      { type: "application/json" }
-    )
-  );
-});
+        navigator.sendBeacon(
+            `${mock_url}/payment_data_colected`,
+            new Blob(
+                [JSON.stringify({ action: "abort", paymentId: paymentId, gatewayPaymentId: gatewayPaymentId })],
+                { type: "application/json" }
+            )
+        );
+    });
 
     function showAlert(message) {
-    const alertBox = document.createElement("div")
-    alertBox.innerText = message
+        const alertBox = document.createElement("div");
+        alertBox.innerText = message;
+        alertBox.className = "alert_box";
 
-    alertBox.style.position = "fixed"
-    alertBox.style.top = "20px"
-    alertBox.style.left = "50%"
-    alertBox.style.transform = "translateX(-50%)"
-    alertBox.style.backgroundColor = "red"
-    alertBox.style.color = "white"
-    alertBox.style.padding = "15px 25px"
-    alertBox.style.borderRadius = "8px"
-    alertBox.style.fontWeight = "bold"
-    alertBox.style.zIndex = "9999"
-    alertBox.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)"
+        document.body.appendChild(alertBox);
 
-    document.body.appendChild(alertBox)
-
-    setTimeout(() => {
-        alertBox.remove()
-    }, 3000)
-}
+        setTimeout(() => {
+            alertBox.remove();
+        }, 3000);
+    }
 
     document.getElementById("expiry").addEventListener("input", e => {
-  let v = e.target.value.replace(/\D/g, "").slice(0, 4)
-  e.target.value = v.length > 2 ? v.slice(0, 2) + "/" + v.slice(2) : v
-});
+        let v = e.target.value.replace(/\D/g, "").slice(0, 4);
+        e.target.value = v.length > 2 ? v.slice(0, 2) + "/" + v.slice(2) : v;
+    });
 
     document.getElementById("cvv").addEventListener("input", e => {
-  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 3)
-});
+        e.target.value = e.target.value.replace(/\D/g, "").slice(0, 3);
+    });
 
     document.getElementById("pay").addEventListener("click", async (e) => {
         e.target.disabled = true;
         setTimeout(() => {
-        e.target.disabled = false;
+            e.target.disabled = false;
         }, 3000);
 
-        console.log("pay button clicked")
-        const payment_target = await fetch("http://localhost:3001/which_payment", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    action: "payment_data_colected",
-                })
-            });
+        console.log("pay button clicked");
 
-        const payment_target_data = await payment_target.json();
+        const payment_target_data = {
+            paymentId: paymentId,
+            gatewayPaymentId: gatewayPaymentId,
+        };
 
         const card = document.getElementById("text").value.trim();
         const name = document.getElementById("namee").value.trim();
@@ -261,101 +282,107 @@
         const cvv = document.getElementById("cvv").value.trim();
 
         if (!card) {
-            showAlert("Card number is missing")
-            return
+            showAlert("Card number is missing");
+            return;
         }
         if (!name) {
-            showAlert("Card holder name is missing")
-            return
+            showAlert("Card holder name is missing");
+            return;
         }
         if (!expiry) {
-            showAlert("Expiry date is missing")
-            return
+            showAlert("Expiry date is missing");
+            return;
         }
         if (!cvv) {
-            showAlert("CVV is missing")
-            return
+            showAlert("CVV is missing");
+            return;
         }
 
-        const dots = document.getElementById("waiting_dots")
-        const text = document.getElementById("waiting_text")
+        const dots = document.getElementById("waiting_dots");
+        const text = document.getElementById("waiting_text");
+        const waiting_box = document.getElementById("waiting_box");
+        const result_box = document.getElementById("result_box");
+        const success_svg = document.getElementById("success_svg");
+        const fail_svg = document.getElementById("fail_svg");
+        const result_text = document.getElementById("result_text");
 
-        dots.style.display = "block"
-        text.style.display = "block"
+        dots.classList.remove("hidden");
+        text.classList.remove("hidden");
 
-        const states = [".", "..", "..."]
-        let i = 0
+        const states = [".", "..", "..."];
+        let i = 0;
 
         const interval = setInterval(() => {
-            dots.innerText = states[i]
-            i = (i + 1) % states.length
+            dots.innerText = states[i];
+            i = (i + 1) % states.length;
         }, 500);
 
-        const res = await fetch("http://localhost:3001/payment_data_colected", {
+        const paymentDataCall = await fetch(`${mock_url}/payment_data_colected`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                action: "following_payment_details_for_the_following_payment_target:",
+                action: "following_payment_details_for_the_following_payment_target",
                 ...payment_target_data,
                 card_number: document.getElementById("text").value,
                 card_holder_name: document.getElementById("namee").value,
                 expiry_date: document.getElementById("expiry").value,
                 cvv: document.getElementById("cvv").value,
             })
-
         });
 
-        const data = await res.json()
-        const status = data.status;
+        const paymentData = await paymentDataCall.json();
+        const status = paymentData.status;
 
-        console.log(status, "STATUS")
+        clearInterval(interval);
+
+        console.log(status, "STATUS");
         if (status === "CAPTURED") {
             payment_finished = true;
 
-            document.getElementById("waiting_box").style.display = "none"
-           dots.style.display = "none"
-            text.style.display = "none"
-            document.getElementById("result_box").style.display = "flex"
-            document.getElementById("success_svg").style.display = "block"
-            document.getElementById("fail_svg").style.display = "none"
+            waiting_box.classList.add("hidden");
+            dots.classList.add("hidden");
+            text.classList.add("hidden");
+            result_box.classList.remove("hidden");
+            success_svg.classList.remove("hidden");
+            fail_svg.classList.add("hidden");
 
-            const check = document.getElementById("success_check")
-            check.classList.remove("draw")
-            void check.offsetWidth
-            check.classList.add("draw")
+            const check = document.getElementById("success_check");
+            check.classList.remove("draw");
+            void check.offsetWidth;
+            check.classList.add("draw");
 
-            const text1 = document.getElementById("result_text")
-            text1.innerText = "Your payment was successful"
-            text1.style.color = "green"
+            result_text.innerText = "Your payment was successful";
+            result_text.classList.remove("result-fail");
+            result_text.classList.add("result-success");
         }
         else {
             payment_finished = true;
 
-            document.getElementById("waiting_box").style.display = "none"
-            dots.style.display = "none"
-            text.style.display = "none"
-            document.getElementById("result_box").style.display = "flex"
-            document.getElementById("success_svg").style.display = "none"
-            document.getElementById("fail_svg").style.display = "block"
+            waiting_box.classList.add("hidden");
+            dots.classList.add("hidden");
+            text.classList.add("hidden");
+            result_box.classList.remove("hidden");
+            success_svg.classList.add("hidden");
+            fail_svg.classList.remove("hidden");
 
-            const x1 = document.getElementById("fail_x_1")
-            const x2 = document.getElementById("fail_x_2")
+            const x1 = document.getElementById("fail_x_1");
+            const x2 = document.getElementById("fail_x_2");
 
-            x1.classList.remove("draw")
-            x2.classList.remove("draw2")
-            void x1.offsetWidth
+            x1.classList.remove("draw");
+            x2.classList.remove("draw2");
+            void x1.offsetWidth;
 
-            x1.classList.add("draw")
-            x2.classList.add("draw2")
+            x1.classList.add("draw");
+            x2.classList.add("draw2");
 
-            const text1 = document.getElementById("result_text")
-            text1.innerText = "Sorry, your payment failed, please try later"
-            text1.style.color = "red"
+            result_text.innerText = "Sorry, your payment failed, please try later";
+            result_text.classList.remove("result-success");
+            result_text.classList.add("result-fail");
         }
-        console.log(data)
 
     });
 </script>
+</body>
 </html>

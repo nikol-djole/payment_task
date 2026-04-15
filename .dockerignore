@@ -1,4 +1,8 @@
-# Dependency directories
+# Git
+.git
+.gitignore
+
+# Dependencies
 node_modules/
 jspm_packages/
 
@@ -31,26 +35,15 @@ Thumbs.db
 *.njsproj
 *.sln
 
-# Build outputs
-dist/
-build/
-out/
-tmp/
-temp/
-
-# Testing
+# Build outputs you do NOT want copied into the image build context
 coverage/
 .nyc_output
-
-# Package manager caches
-.npm/
-.pnpm-store/
-.yarn/
-.yarn-cache/
-
-# Misc caches
+tmp/
+temp/
 .cache/
 .parcel-cache/
 
-# TypeScript
-*.tsbuildinfo
+# Optional
+Dockerfile*
+docker-compose*.yml
+README.md

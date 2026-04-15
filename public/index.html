@@ -1,321 +1,394 @@
 <!DOCTYPE html>
-<meta charset="UTF-8">
-<title>Page for buying things...</title>
 <html>
-<body>
-<style>
+<head>
+  <meta charset="UTF-8">
+  <title>Page for buying things...</title>
+  <style>
     body {
-        background-color: white;
-
+      background-color: white;
+      margin: 0;
+      font-family: Arial, sans-serif;
     }
+
     #root {
-        width: 100vw;
-        height: 100vh;
-        background-color: whitesmoke;
-        display: flex;
-        flex-direction: column;
+      width: 100vw;
+      height: 100vh;
+      background-color: whitesmoke;
+      display: flex;
+      flex-direction: column;
     }
-    #root_1 {
-        width: 100%;
-        background-color: white;
-        height: 95%;
-        display: grid;
-         grid-template-columns: repeat(auto-fit, 200px);
-        grid-auto-rows: 200px;
-         gap: 15px;
-        margin: 10px;
-        justify-items: stretch;
-        align-items: stretch;
 
-    }
     #header {
-        width: 100%;
-        height: 5%;
-        background-color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 20px;
-        font-weight: bold;
+      width: 100%;
+      height: 5%;
+      background-color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 20px;
+      font-weight: bold;
     }
-</style>
 
-<div id="root">
-<div id = "header"> WELLCOME</div>
+    #root_1 {
+      width: 100%;
+      background-color: white;
+      height: 95%;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, 200px);
+      grid-auto-rows: 260px;
+      gap: 15px;
+      margin: 10px;
+      justify-items: stretch;
+      align-items: stretch;
+      position: relative;
+    }
+
+    .article_container {
+      background-color: whitesmoke;
+      padding: 10px;
+      border: 1px solid black;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      border-radius: 5%;
+    }
+
+    .product_img {
+      width: 90%;
+      height: 170px;
+      object-fit: cover;
+    }
+
+    .price_and_button {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .price {
+      color: green;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    #login_box {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 250px;
+      padding: 20px;
+      background-color: white;
+      border: 1px solid black;
+      border-radius: 8px;
+      z-index: 100000;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    #username,
+    #password,
+    #login_button {
+      padding: 8px;
+    }
+
+    #congrats_window {
+      width: 50%;
+      height: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: white;
+      position: absolute;
+      top: 10%;
+      left: 25%;
+      z-index: 1000;
+      border: 1px solid black;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    #x {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: 1px solid black;
+      background-color: red;
+      cursor: pointer;
+    }
+
+    #congrats_text {
+      font-family: Arial, sans-serif;
+      font-style: italic;
+      margin-top: 100px;
+      font-size: 20px;
+      font-weight: bold;
+      color: green;
+      text-align: center;
+      padding: 10px;
+      width: 100%;
+      height: 90%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .alert_box {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: red;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 8px;
+      font-weight: bold;
+      z-index: 9999;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div id="header">WELLCOME</div>
     <div id="root_1"></div>
-</div>
+  </div>
+
+  <div id="login_box" class="hidden">
+    <input id="username" placeholder="Username">
+    <input id="password" placeholder="Password" type="password">
+    <button id="login_button">Login</button>
+  </div>
+
+  <div id="congrats_window" class="hidden">
+    <button id="x"></button>
+    <div id="congrats_text">Congratulations! You have ve bought your self a nice thing!</div>
+  </div>
 
   <script>
-      function make_congrats_window() {
-          const container = document.getElementById("root_1");
+    const APP_URL = "http://localhost:3000";
+    function make_congrats_window() {
+      document.getElementById("congrats_window").classList.remove("hidden");
+    }
 
-          const r = Object.assign(document.createElement("div"), {id: "congrats_window"})
-          container.appendChild(r);
-          r.style.width = "50%";
-          r.style.height = "50%";
-          r.style.display = "flex";
-          r.style.justifyContent = "center";
-          r.style.alignItems = "center";
-          r.style.backgroundColor = "white";
-            r.style.position = "absolute";
-
-          r.style.top = `10%`;
-          r.style.left = `25%`;
-          r.style.zIndex = "1000";
-          const quit = Object.assign(document.createElement("button"), {id: "x"})
-          r.appendChild(quit);
-          quit.style.position = "absolute";
-          quit.style.top = "10px";
-          quit.style.right = "10px";
-          quit.style.width = "15px";
-          quit.style.height = "15px";
-          quit.style.borderRadius = "50%";
-          quit.style.border = "1px solid black";
-          quit.style.backgroundColor = "red";
-
-          const text = Object.assign(document.createElement("div"), {id: "congrats_text"})
-          text.innerText = "Congratulations! You have ve bought your self a nice thing!";
-          r.appendChild(text);
-          text.style.fontFamily = "Arial, sans-serif";
-          text.style.fontStyle = "italic";
-          text.style.marginTop = "100px";
-          text.style.fontSize = "20px";
-          text.style.fontWeight = "bold";
-          text.style.color = "green";
-          text.style.textAlign = "center";
-          text.style.padding = "10px"
-          text.style.width = "100%";
-          text.style.height = "90%";
-          text.style.display = "flex";
-          text.style.justifyContent = "center";
-      }
-      const nums = [5142, 6632, 3409, 561, 2133, 1647, 2728, 3945, 2700, 6214];
-      const pics = [
-  "https://picsum.photos/id/10/300/200",
-  "https://picsum.photos/id/20/300/200",
-  "https://picsum.photos/id/30/300/200",
-  "https://picsum.photos/id/40/300/200",
-  "https://picsum.photos/id/50/300/200",
-  "https://picsum.photos/id/60/300/200",
-  "https://picsum.photos/id/70/300/200",
-  "https://picsum.photos/id/80/300/200",
-  "https://picsum.photos/id/90/300/200",
-  "https://picsum.photos/id/100/300/200"
-];
+    const nums = [5142, 6632, 3409, 561, 2133, 1647, 2728, 3945, 2700, 6214];
+    const pics = [
+      "https://picsum.photos/id/10/300/200",
+      "https://picsum.photos/id/20/300/200",
+      "https://picsum.photos/id/30/300/200",
+      "https://picsum.photos/id/40/300/200",
+      "https://picsum.photos/id/50/300/200",
+      "https://picsum.photos/id/60/300/200",
+      "https://picsum.photos/id/70/300/200",
+      "https://picsum.photos/id/80/300/200",
+      "https://picsum.photos/id/90/300/200",
+      "https://picsum.photos/id/100/300/200"
+    ];
 
     async function get_customer_id() {
-        const container = document.getElementById("root_1");
-        const loginBox = document.createElement("div")
-        loginBox.id = "login_box"
+      const loginBox = document.getElementById("login_box");
+      const usernameInput = document.getElementById("username");
+      const passwordInput = document.getElementById("password");
+      const loginButton = document.getElementById("login_button");
 
-        const usernameInput = document.createElement("input")
-        usernameInput.id = "username"
-        usernameInput.placeholder = "Username"
+      loginBox.classList.remove("hidden");
+      usernameInput.value = "";
+      passwordInput.value = "";
 
-        const passwordInput = document.createElement("input")
-        passwordInput.id = "password"
-        passwordInput.placeholder = "Password"
-        passwordInput.type = "password"
+      return await new Promise((resolve) => {
+        function handleLogin() {
+          loginButton.removeEventListener("click", handleLogin);
+          loginBox.classList.add("hidden");
+          resolve({
+            username: usernameInput.value,
+            password: passwordInput.value
+          });
+        }
 
-        const loginButton = document.createElement("button")
-        loginButton.id = "login_button"
-        loginButton.textContent = "Login"
-
-        loginBox.appendChild(usernameInput)
-        loginBox.appendChild(passwordInput)
-        loginBox.appendChild(loginButton)
-        container.appendChild(loginBox)
-
-        loginBox.style.display = "flex"
-        loginBox.style.flexDirection = "column"
-        loginBox.style.gap = "10px"
-        loginBox.style.width = "250px"
-        loginBox.style.padding = "20px"
-        loginBox.style.backgroundColor = "white"
-        loginBox.style.border = "1px solid black"
-        loginBox.style.borderRadius = "8px"
-        loginBox.style.zzzIndex = "100000"
-        usernameInput.style.padding = "8px"
-        passwordInput.style.padding = "8px"
-        loginButton.style.padding = "8px"
-
-
-        loginBox.style.position = "absolute"
-        loginBox.style.top = "50%"
-        loginBox.style.left = "50%"
-        loginBox.style.transform = "translate(-50%, -50%)"
-    return await new Promise((resolve) => {
-        loginButton.addEventListener("click", () => {
-            resolve({
-                username: usernameInput.value,
-                password: passwordInput.value
-            })
-            loginBox.remove()
-        })
-    })
+        loginButton.addEventListener("click", handleLogin);
+      });
     }
 
     const container = document.getElementById("root_1");
-    for (let i = 0; i < 10; i++) {
-        const article = Object.assign(document.createElement("div"), {id: `article_container_${i}`})
-        article.style.backgroundColor = "white";
-        article.style.padding = "10px";
-        article.style.border= "1px solid black";
-        article.style.display = "flex";
-        article.style.flexDirection = "column";
-        article.style.alignItems = "center";
-        article.style.gap = "10px";
-        article.style.borderRadius = "5%";
-        article.style.background = "whitesmoke";
-        const img = Object.assign(document.createElement("img"), {src: pics[i], alt: "product", id: `img_${i}`});
-        img.style.width = "90%";
-        img.style.height = "90%";
-        img.style.objectFit = "cover";
 
-        article.appendChild(img);
-        const price_and_button = Object.assign(document.createElement("div"), {id: `price_and_button_${i}`})
-        price_and_button.style.width = "100%";
-        price_and_button.style.display = "flex";
-        price_and_button.style.flexDirection = "row";
-        //price_and_button.style.alignItems = "center";
-        price_and_button.style.justifyContent = "space-between";
-        const price = Object.assign(document.createElement("div"), {id: `price_${i}`, innerText: `Price: ${nums[i]} CHF`})
-        price.style.color = "green";
-        price_and_button.appendChild(price)
-        const button = Object.assign(document.createElement("button"), {id: `payBtn_${i}`, innerText: `Pay`})
-        button.dataset.prod = `PROD${String(i + 1).padStart(3, "0")}`
-        price_and_button.appendChild(button)
-        article.appendChild(price_and_button)
-        container.appendChild(article)
+    for (let i = 0; i < 10; i++) {
+      const article = document.createElement("div");
+      article.id = `article_container_${i}`;
+      article.className = "article_container";
+
+      const img = document.createElement("img");
+      img.src = pics[i];
+      img.alt = "product";
+      img.id = `img_${i}`;
+      img.className = "product_img";
+
+      const price_and_button = document.createElement("div");
+      price_and_button.id = `price_and_button_${i}`;
+      price_and_button.className = "price_and_button";
+
+      const price = document.createElement("div");
+      price.id = `price_${i}`;
+      price.className = "price";
+      price.innerText = `Price: ${nums[i]} CHF`;
+
+      const button = document.createElement("button");
+      button.id = `payBtn_${i}`;
+      button.innerText = "Pay";
+      button.dataset.prod = `PROD${String(i + 1).padStart(3, "0")}`;
+
+      price_and_button.appendChild(price);
+      price_and_button.appendChild(button);
+
+      article.appendChild(img);
+      article.appendChild(price_and_button);
+      container.appendChild(article);
     }
 
     function showAlert(message) {
-    const alertBox = document.createElement("div")
-    alertBox.innerText = message
+      const alertBox = document.createElement("div");
+      alertBox.innerText = message;
+      alertBox.className = "alert_box";
 
-    alertBox.style.position = "fixed"
-    alertBox.style.top = "20px"
-    alertBox.style.left = "50%"
-    alertBox.style.transform = "translateX(-50%)"
-    alertBox.style.backgroundColor = "red"
-    alertBox.style.color = "white"
-    alertBox.style.padding = "15px 25px"
-    alertBox.style.borderRadius = "8px"
-    alertBox.style.fontWeight = "bold"
-    alertBox.style.zIndex = "9999"
-    alertBox.style.boxShadow = "0 4px 10px rgba(0,0,0,0.2)"
+      document.body.appendChild(alertBox);
 
-    document.body.appendChild(alertBox)
-
-    setTimeout(() => {
-        alertBox.remove()
-    }, 3000)
-}
-
+      setTimeout(() => {
+        alertBox.remove();
+      }, 3000);
+    }
 
     document.getElementById("root").addEventListener("click", async (e) => {
-        if (!e.target.id.startsWith("payBtn_")) return;
-        e.target.disabled = true;
-        setTimeout(() => {e.target.disabled = false;
-        }, 3000);
+      if (!e.target.id.startsWith("payBtn_")) return;
+
+      e.target.disabled = true;
+      setTimeout(() => {
+        e.target.disabled = false;
+      }, 3000);
+
         const customer_id = await get_customer_id();
 
-        const customer_data_call = await fetch("http://localhost:3000/customers", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                username: customer_id.username,
-                password: customer_id.password,
-            })
-        });
 
-        const customer_data = await customer_data_call.json();
+      const customer_data_call = await fetch(`${APP_URL}/customers`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          username: customer_id.username,
+          password: customer_id.password
+        })
+      });
 
-        if (customer_data.error) {
-           showAlert("INVALID CREDENTIALS...");
-            return;
-        }
+      const customer_data = await customer_data_call.json();
 
-        const prod_id = e.target.dataset.prod;
+      if (customer_data.error) {
+        showAlert("INVALID CREDENTIALS...");
+        return;
+      }
 
-        const prod_data_call = await fetch("http://localhost:3000/products", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                prod_id: prod_id,
-            })
-        });
+     const productId = e.target.dataset.prod;
 
-        const prod_data = await prod_data_call.json();
 
-        const res = await fetch("http://localhost:3000/payments", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Idempotency-Key": crypto.randomUUID()
-            },
-            body: JSON.stringify({
-              userId: customer_data.user_id,
-              amount: parseInt(prod_data.price),
-              currency: prod_data.currency,
-                email: customer_data.email,
-                phone_number: customer_data.phone_number,
-                product_name: prod_data.name,
-                zip_code: customer_data.zip_code,
-                town: customer_data.town,
-                first_name: customer_data.first_name,
-                last_name: customer_data.last_name,
-                address: customer_data.address
+      const productDataCall = await fetch(`${APP_URL}/products`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          prod_id: productId
+        })
+      });
 
-            })
+      const productData = await productDataCall.json();
+
+      if (productData.error) {
+        showAlert("PRODUCT COULD NOT BE LOADED...");
+        return;
+      }
+
+      const gateWayInfo = await fetch(`${APP_URL}/payments`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID()
+        },
+        body: JSON.stringify({
+          userId: customer_data.userId,
+          amount: parseInt(productData.price),
+          currency: productData.currency
+        })
+      });
+
+      const gateWayPaymentData = await gateWayInfo.json();
+
+      if (!gateWayPaymentData.checkoutUrl) {
+        showAlert("SOMETHING WENT WRONG... PLEASE TRY AGAIN LATER");
+        return;
+      }
+
+        const payWindow = window.open(gateWayPaymentData.checkoutUrl, "_blank");
+
+      const paymentId = gateWayPaymentData.paymentId;
+
+      const pollPayment = setInterval(async () => {
+        try {
+          const paymentDataPoll = await fetch(`${APP_URL}/payments/${paymentId}`, {
+            method: "GET"
           });
 
-        const data = await res.json();
+          const paymentData = await paymentDataPoll.json();
 
-        if (!data.payment_url){
-            showAlert("SOMETHING WENT WRONG... PLEASE TRY AGAIN LATER")
+          if (paymentData.error) {
+            console.log("Polling error:", paymentData.error);
             return;
+          }
+
+          let actionPointer = null;
+          if (paymentData.payment_data?.status) {
+            actionPointer = paymentData.payment_data.status;
+          }
+
+          console.log(actionPointer);
+
+          if (actionPointer === "CAPTURED") {
+            clearInterval(pollPayment);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            payWindow.close();
+            make_congrats_window();
+
+          }
+
+          if (actionPointer === "FAILED") {
+            clearInterval(pollPayment);
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            payWindow.close();
+            showAlert("Payment failed");
+
+          }
+        } catch (err) {
+          console.log("Polling crashed:", err);
         }
+      }, 2000);
 
-        const payWindow = window.open(data.payment_url, "_blank");
+      setTimeout(() => {
+        clearInterval(pollPayment);
+        console.log("stopped polling after 2 minutes");
+      }, 120000);
+    });
 
-        const data_for_backend = {...data};
-
-        const pollPayment = setInterval(async () => {
-              const payment_id = data_for_backend.payment_id;
-
-              const res2 = await fetch(`http://localhost:3000/payments/${payment_id}`, {
-                method: "GET"});
-
-              const data2 = await res2.json()
-
-              if (data2.payment_status === "CAPTURED") {
-                clearInterval(pollPayment);
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                payWindow.close()
-                make_congrats_window();
-
-              }
-
-              if (data2.payment_status === "FAILED") {
-                clearInterval(pollPayment);
-                await new Promise(resolve => setTimeout(resolve, 3000));
-                payWindow.close()
-                showAlert("Payment failed")
-              }
-            }, 2000);
-
-        document.addEventListener("click", (e) => {
-                    if (e.target.id === "x") {
-                        document.getElementById("congrats_window")?.remove()
-                    }
-                })
-
-    })
+    document.addEventListener("click", (e) => {
+      if (e.target.id === "x") {
+        document.getElementById("congrats_window")?.classList.add("hidden");
+      }
+    });
   </script>
 </body>
 </html>
