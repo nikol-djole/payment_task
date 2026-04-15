@@ -1,5 +1,5 @@
-const mail = "lighting-pay@djordjenikolic.ch"
-const password = "L_123456789"
+const mail = process.env.MAIL_USER
+const password = process.env.MAIL_PASSWORD
 const nodemailer = require("nodemailer")
 const pool = require("./postgres_db")
 const PDFDocument = require("pdfkit")
@@ -62,9 +62,9 @@ async function check_out_box() {
 
     const result = await pool.query(`
       SELECT *
-      FROM outbox
-      WHERE status = 'PENDING'
-        AND (next_attempt_at IS NULL OR next_attempt_at <= NOW())
+      FROM "outbox"
+      WHERE "status" = 'PENDING'
+        AND ("nextAttemptAt" IS NULL OR "nextAttemptAt" <= NOW())
       LIMIT 10
     `)
 
@@ -94,10 +94,10 @@ async function check_out_box() {
             })
             console.log("email sent")
             await pool.query(`
-                UPDATE outbox
-                SET status = 'SENT',
-                    next_attempt_at = NOW(),
-                    attempts = attempts + 1
+                UPDATE "outbox"
+                SET "status" = 'SENT',
+                    "nextAttemptAt" = NOW(),
+                    "attempts" = "attempts" + 1
                 WHERE id = $1
             `, [row.id])
             console.log("sent email to", email)
@@ -105,10 +105,10 @@ async function check_out_box() {
         }
         catch {
             await pool.query(`
-                UPDATE outbox
-                SET status = 'FAILED',
-                    next_attempt_at = NOW(),
-                    attempts = attempts + 1
+                UPDATE "outbox"
+                SET "status" = 'FAILED',
+                    "nextAttemptAt" = NOW(),
+                    "attempts" = "attempts" + 1
                 WHERE id = $1
             `, [row.id])
         }
