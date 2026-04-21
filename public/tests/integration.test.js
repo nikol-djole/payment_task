@@ -35,8 +35,8 @@ test('customer login fails with invalid credentials', async () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            username: TEST_USERNAME,
-            password: 'tttttttt'
+            username: "wrong-username",
+            password: 'wrong-password'
         })
     })
 
@@ -69,9 +69,16 @@ test('payment flow reaches a terminal state', async () => {
             username: TEST_USERNAME,
             password: TEST_PASSWORD
         })
-    })
-    const customer = await customerRes.json()
-    assert.ok(customer.userId)
+    });
+
+    const customer = await customerRes.json();
+    assert.ok(customer.userId);
+
+    const setCookies = customerRes.headers.getSetCookie();
+
+    assert.ok(setCookies.length > 0, "Expected session cookie from login response");
+
+    const sessionCookie = setCookies[0].split(";")[0];
 
     const productRes = await fetch(`${APP_URL}/products`, {
         method: 'POST',
@@ -79,35 +86,37 @@ test('payment flow reaches a terminal state', async () => {
         body: JSON.stringify({
             prod_id: PRODUCT_ID
         })
-    })
-    const product = await productRes.json()
-    assert.ok(product.price)
+    });
+
+    const product = await productRes.json();
+    assert.ok(product.price);
 
     const idempotencyKey = crypto.randomUUID();
+
     const paymentRes = await fetch(`${APP_URL}/payments`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Idempotency-Key': idempotencyKey
+            'Idempotency-Key': idempotencyKey,
+            'Cookie': sessionCookie
         },
         body: JSON.stringify({
             userId: customer.userId,
             amount: parseInt(product.price, 10),
             currency: product.currency
         })
-    })
+    });
 
-    const paymentData = await paymentRes.json()
+    const paymentData = await paymentRes.json();
 
+    assert.ok(!paymentData.error, `Payments returned error: ${paymentData.error}`);
+    assert.ok(paymentData.paymentId);
+    assert.ok(paymentData.checkoutUrl);
 
-    assert.ok(!paymentData.error, `Payments returned error: ${paymentData.error}`)
-    assert.ok(paymentData.paymentId)
-    assert.ok(paymentData.checkoutUrl)
+    const checkoutUrl = new URL(paymentData.checkoutUrl);
+    const gatewayPaymentId = checkoutUrl.searchParams.get('gatewayPaymentId');
 
-    const checkoutUrl = new URL(paymentData.checkoutUrl)
-    const gatewayPaymentId = checkoutUrl.searchParams.get('gatewayPaymentId')
-
-    assert.ok(gatewayPaymentId)
+    assert.ok(gatewayPaymentId);
 
     const mockRes = await fetch(`${MOCK_URL}/payment_data_colected`, {
         method: 'POST',
@@ -121,24 +130,28 @@ test('payment flow reaches a terminal state', async () => {
             expiry_date: '12/28',
             cvv: '123'
         })
-    })
+    });
 
-    assert.equal(mockRes.status, 200)
+    assert.equal(mockRes.status, 200);
 
-    let finalStatus = null
+    let finalStatus = null;
 
     for (let i = 0; i < 30; i++) {
-        const pollRes = await fetch(`${APP_URL}/payments/${paymentData.paymentId}`)
-        const pollData = await pollRes.json()
+        const pollRes = await fetch(`${APP_URL}/payments/${paymentData.paymentId}`, {
+            headers: {
+                'Cookie': sessionCookie
+            }
+        });
 
-        finalStatus = pollData.payment_data?.status || null
+        const pollData = await pollRes.json();
+        finalStatus = pollData.payment_data?.status || null;
 
         if (finalStatus === 'CAPTURED' || finalStatus === 'FAILED') {
-            break
+            break;
         }
 
-        await sleep(1000)
+        await sleep(2000);
     }
 
-    assert.ok(finalStatus === 'CAPTURED' || finalStatus === 'FAILED')
-})
+    assert.ok(finalStatus === 'CAPTURED' || finalStatus === 'FAILED');
+});

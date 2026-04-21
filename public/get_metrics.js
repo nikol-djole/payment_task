@@ -7,6 +7,18 @@ const PRODUCT_ID = process.env.PRODUCT_ID || "PROD001"
 const USERNAME = process.env.TEST_USERNAME || "luca-meier"
 const PASSWORD = process.env.TEST_PASSWORD || "cust001"
 
+let shouldStop = false
+
+process.on("SIGINT", () => {
+    console.log("Stopping get_metrics")
+    shouldStop = true
+})
+
+process.on("SIGTERM", () => {
+    console.log("Stopping get_metrics")
+    shouldStop = true
+})
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -29,7 +41,18 @@ async function getCustomer() {
         throw new Error(`customers failed: ${data.error || res.status}`)
     }
 
-    return data
+    const setCookies = res.headers.getSetCookie()
+
+    if (!setCookies || setCookies.length === 0) {
+        throw new Error("customers failed: missing session cookie")
+    }
+
+    const sessionCookie = setCookies[0].split(";")[0]
+
+    return {
+        customer: data,
+        sessionCookie
+    }
 }
 
 async function getProduct() {
@@ -52,12 +75,13 @@ async function getProduct() {
     return data
 }
 
-async function createPayment(userId, amount, currency) {
+async function createPayment(userId, amount, currency, sessionCookie) {
     const res = await fetch(`${APP_URL}/payments`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            "Idempotency-Key": crypto.randomUUID()
+            "Idempotency-Key": crypto.randomUUID(),
+            "Cookie": sessionCookie
         },
         body: JSON.stringify({
             userId,
@@ -127,9 +151,18 @@ async function sendMockPaymentDetails(paymentId, gatewayPaymentId) {
     return data
 }
 
-async function waitForTerminalStatus(paymentId, maxAttempts = 60, delayMs = 1000) {
+async function waitForTerminalStatus(paymentId, sessionCookie, maxAttempts = 60, delayMs = 1000) {
     for (let i = 0; i < maxAttempts; i++) {
-        const res = await fetch(`${APP_URL}/payments/${paymentId}`)
+        if (shouldStop) {
+            throw new Error("Stopping get_metrics")
+        }
+
+        const res = await fetch(`${APP_URL}/payments/${paymentId}`, {
+            headers: {
+                "Cookie": sessionCookie
+            }
+        })
+
         const data = await res.json()
 
         if (!res.ok || data.error) {
@@ -151,12 +184,14 @@ async function waitForTerminalStatus(paymentId, maxAttempts = 60, delayMs = 1000
 async function runOne(i) {
     console.log(`RUN ${i + 1}/${RUNS}`)
 
-    const customer = await getCustomer()
+    const { customer, sessionCookie } = await getCustomer()
     const product = await getProduct()
+
     const payment = await createPayment(
         customer.userId,
         parseInt(product.price, 10),
-        product.currency
+        product.currency,
+        sessionCookie
     )
 
     const gatewayPaymentId = extractGatewayPaymentId(payment.checkoutUrl)
@@ -169,7 +204,7 @@ async function runOne(i) {
     const mockResult = await sendMockPaymentDetails(payment.paymentId, gatewayPaymentId)
     console.log("mock fetch result:", mockResult)
 
-    const finalStatus = await waitForTerminalStatus(payment.paymentId)
+    const finalStatus = await waitForTerminalStatus(payment.paymentId, sessionCookie)
     console.log(`final status for ${payment.paymentId}: ${finalStatus}`)
 
     return finalStatus
@@ -179,6 +214,8 @@ async function main() {
     const results = []
 
     for (let i = 0; i < RUNS; i++) {
+        if (shouldStop) break
+
         try {
             const result = await runOne(i)
             results.push(result)

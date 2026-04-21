@@ -3,10 +3,20 @@ const path = require("path")
 const app = express()
 const pool = require("./postgres_db");
 const crypto = require("crypto");
-const {check_signatures, secrets} = require("../public/shared_functions.js")
+const {check_signatures, secrets, validateBody, isUuid} = require("../public/shared_functions.js")
 const bcrypt = require("bcrypt");
+const session = require("express-session");
 
 //*******************************************************************************************************************
+app.use(session({
+    secret: process.env.AUT_SECRET_KEY,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        maxAge: 10 * 60 * 1000
+    }
+}));
 app.use(express.json())
 app.use(express.static(path.join(__dirname, "..", "public")))
 
@@ -60,7 +70,6 @@ function measureRoute(routeName) {
         res.on("finish", () => {
             const duration = Date.now() - start;
             recordMetric(routeName, duration);
-            console.log(`${routeName} took ${duration} ms`);
         });
 
         next();
@@ -306,74 +315,94 @@ app.get("/metrics-data", (req, res) => {
         }
     });
 });
-app.post("/payments",measureRoute("/payments"), async (req, res) => {
+
+app.post("/payments", measureRoute("/payments"), async (req, res) => {
 
     const paymentId = crypto.randomUUID();
-
-    console.log( `Payment with payment id: ${paymentId} was initiated.\n`);
-    try {
-    const { userId, amount, currency } = req.body;
-
-    const idempotencyKey = req.header("Idempotency-Key");
-
-     if (!userId || !amount || !currency || !idempotencyKey ) {
-         console.log(userId,amount,currency,idempotencyKey);
-     console.log(`Webhook evnet for the payment ${paymentId} misses a required field.\n`);
-      throw new Error("Missing required fields");
-    }
-    const payments_entry = await pool.query(
-      `
-      INSERT INTO "payments" (
-        "id",
-        "userId",
-        "amount",
-        "currency",
-        "status",
-        "gateway",
-        "idempotencyKey",
-        "createdAt"
-      )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-     ON CONFLICT ("idempotencyKey") DO NOTHING
-      RETURNING *
-      `,
-      [paymentId, userId, amount, currency, "CREATED", "mock", idempotencyKey, new Date()]
-    );
-   if (payments_entry.rows.length === 0) {
-       console.log(`Payment with  payment id: ${paymentId} was not inserted into payments table. The key already exists.\n`);
-       throw new Error("Payment already exists.");
-   }
-   console.log(`Payment with payment id: ${paymentId} was inserted into payments table.\n`);
-
-    const webhook_body = {
-              action: "create_payment",
-              amount: amount,
-              currency: currency,
-              paymentId: paymentId
-
-          };
-
-    const init_webhook = await fetch(`${mock_url}/mock/checkout`, {
-          method: "POST",
-          headers: {
-              "Content-Type": "application/json",
-              "X-Signature": secrets(webhook_body)
-          },
-          body: JSON.stringify(webhook_body)
-      });
-
-    const initial_gateway_response = await init_webhook.json();
-
-    console.log(`gatewayPaymentId and checkoutUrl were received from the gateway for the payment with payment id: ${paymentId}.\n`);
-
-    const gatewayPaymentId = initial_gateway_response.gatewayPaymentId;
-    console.log(`gatewayPaymentId: ${gatewayPaymentId}\n`);
     const client = await pool.connect();
 
-    try {
-          await client.query("BEGIN");
+    console.log(`Payment with payment id: ${paymentId} was initiated.\n`);
 
-          const update_payments = await client.query(
+    try {
+        validateBody(req.body, "payments");
+
+        const { userId, amount, currency } = req.body;
+        const sessionUserId = req.session.userId;
+        const idempotencyKey = req.header("Idempotency-Key");
+
+        if (!sessionUserId) {
+            console.log(`For the payment ${paymentId} the session didn't started.\n`);
+            throw new Error("User not logged in 1.");
+        }
+
+        if (userId !== sessionUserId) {
+            console.log(`For the payment: ${paymentId} there is a user mismatch.\n`);
+            throw new Error("User mismatch.");
+        }
+
+        if (!idempotencyKey) {
+            console.log(`Payment ${paymentId} is missing Idempotency-Key.\n`);
+            throw new Error("Missing Idempotency-Key");
+        }
+
+        await client.query("BEGIN");
+
+        const payments_entry = await client.query(
+            `
+            INSERT INTO "payments" (
+              "id",
+              "userId",
+              "amount",
+              "currency",
+              "status",
+              "gateway",
+              "idempotencyKey",
+              "createdAt"
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT ("idempotencyKey") DO NOTHING
+            RETURNING *
+            `,
+            [paymentId, userId, amount, currency, "CREATED", "mock", idempotencyKey, new Date()]
+        );
+
+        if (payments_entry.rows.length === 0) {
+            console.log(`Payment with payment id: ${paymentId} was not inserted into payments table. The key already exists.\n`);
+            throw new Error("Payment already exists.");
+        }
+
+        console.log(`Payment with payment id: ${paymentId} was inserted into payments table.\n`);
+
+        const webhook_body = {
+            action: "create_payment",
+            amount: amount,
+            currency: currency,
+            paymentId: paymentId
+        };
+
+        const init_webhook = await fetch(`${mock_url}/mock/checkout`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-Signature": secrets(webhook_body)
+            },
+            body: JSON.stringify(webhook_body)
+        });
+
+        const initial_gateway_response = await init_webhook.json();
+
+        if (!init_webhook.ok || initial_gateway_response.error) {
+            throw new Error(`Mock checkout failed: ${initial_gateway_response.error || init_webhook.status}`);
+        }
+
+        validateBody(initial_gateway_response, "paymentResponse");
+
+        console.log(`gatewayPaymentId and checkoutUrl were received from the gateway for the payment with payment id: ${paymentId}.\n`);
+
+        const gatewayPaymentId = initial_gateway_response.gatewayPaymentId;
+        console.log(`gatewayPaymentId: ${gatewayPaymentId}\n`);
+
+        const update_payments = await client.query(
             `
             UPDATE "payments"
             SET "gatewayPaymentId" = $1,
@@ -381,29 +410,32 @@ app.post("/payments",measureRoute("/payments"), async (req, res) => {
             WHERE "idempotencyKey" = $2
               AND "id" = $3
             RETURNING *
-            `, [gatewayPaymentId, idempotencyKey, paymentId]
-          );
+            `,
+            [gatewayPaymentId, idempotencyKey, paymentId]
+        );
 
-          if (update_payments.rows.length === 0) {
-            await client.query("ROLLBACK");
+        if (update_payments.rows.length === 0) {
             console.log(`For the payment with payment id: ${paymentId}, the gatewayPaymentId was not inserted into payments table.\n`);
             throw new Error("Payment not found in payments table in order to update the gatewayPaymentId.");
-          }
+        }
 
-          const payment_row = update_payments.rows[0];
+        const payment_row = update_payments.rows[0];
 
-          const customer_row = await client.query(
-              `
-              SELECT * FROM "customers" WHERE "userId" = $1
-              `, [userId]
-          );
-          if (customer_row.rows.length === 0) {
-              await client.query("ROLLBACK");
-              console.log(`For the payment with payment id:  ${paymentId},  customer info was not found in customers table.\n`);
-              throw new Error("Customer not found in customers table in order to update the customer info.");
-          }
-          const customer_info = customer_row.rows[0];
-          await client.query(
+        const customer_row = await client.query(
+            `
+            SELECT * FROM "customers" WHERE "userId" = $1
+            `,
+            [userId]
+        );
+
+        if (customer_row.rows.length === 0) {
+            console.log(`For the payment with payment id: ${paymentId}, customer info was not found in customers table.\n`);
+            throw new Error("Customer not found in customers table in order to update the customer info.");
+        }
+
+        const customer_info = customer_row.rows[0];
+
+        await client.query(
             `
             INSERT INTO "current_buys" (
               "paymentId",
@@ -422,52 +454,52 @@ app.post("/payments",measureRoute("/payments"), async (req, res) => {
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             `,
             [
-              payment_row.id,
-              payment_row.userId,
-              payment_row.gatewayPaymentId,
-              payment_row.idempotencyKey,
-              payment_row.currency,
-              payment_row.amount,
-              customer_info.email,
-              customer_info.address,
-              customer_info.zipCode,
-              customer_info.town,
-              customer_info.firstName,
-              customer_info.lastName
+                payment_row.id,
+                payment_row.userId,
+                payment_row.gatewayPaymentId,
+                payment_row.idempotencyKey,
+                payment_row.currency,
+                payment_row.amount,
+                customer_info.email,
+                customer_info.address,
+                customer_info.zipCode,
+                customer_info.town,
+                customer_info.firstName,
+                customer_info.lastName
             ]
-          );
+        );
 
-          await client.query("COMMIT");
-        }
-        catch (err) {
-          await client.query("ROLLBACK");
-          throw err;
-        }
-        finally {
-          client.release();
-        }
-        console.log(`For the payment with payment id: ${paymentId} gatewayPaymentId was inserted into payments table.\n`)
+        await client.query("COMMIT");
+
+        console.log(`For the payment with payment id: ${paymentId} gatewayPaymentId was inserted into payments table.\n`);
+
         res.json({
-            paymentId:paymentId,
+            paymentId: paymentId,
             checkoutUrl: initial_gateway_response.checkoutUrl
+        });
 
-          });
-        console.log(`For the payment with payment id: ${paymentId} paymentId and checkoutUrl was sent to the frontend, payments call is done!\n`)
-      }
-      catch (err) {
-    console.error(`For the payment with payment id: ${paymentId}, error occurred during payment creation, returning error:\n${err.message}\n`);
-    res.json({ error: err.message });
-  }
+        console.log(`For the payment with payment id: ${paymentId} paymentId and checkoutUrl was sent to the frontend, payments call is done!\n`);
+    } catch (err) {
+        await client.query("ROLLBACK");
+
+        console.error(`For the payment with payment id: ${paymentId}, error occurred during payment creation, returning error:\n${err.message}\n`);
+        res.json({ error: err.message });
+    } finally {
+        client.release();
+    }
 });
 
 //*******************************************************************************************************************
 
 app.post("/customers",measureRoute("/customers"), async (req, res) => {
 
-    const { username, password } = req.body;
-
-    console.log( `Customer data request was received for ${username}.\n`);
     try {
+        validateBody(req.body, "customers");
+
+        const { username, password } = req.body;
+
+        console.log( `Customer data request was received for ${username}.\n`);
+
          const full_customer_data = await pool.query(
         `
        SELECT "userId", "firstName", "lastName","phoneNumber", "address","zipCode","town", "email", "password"
@@ -487,12 +519,23 @@ app.post("/customers",measureRoute("/customers"), async (req, res) => {
         console.log(`Password for the username: ${username} is incorrect.\n`);
         throw new Error("Incorrect password");
     }
+    req.session.userId = customer.userId;
+    console.log(`Customer data request was found for ${username}, session started.\n`);
     const { password: _, ...customerWithoutPassword } = customer;
+  req.session.save(err => {
+    if (err) {
+        console.error(`Session save failed for ${username}: ${err.message}\n`);
+        return res.json({ error: "Session could not be saved" });
+    }
+
     res.json(customerWithoutPassword);
     console.log(`Customer data request was found for ${username}, customer data was sent to the frontend.\n`);
+});
+   // res.json(customerWithoutPassword);
+    //console.log(`Customer data request was found for ${username}, customer data was sent to the frontend.\n`);
     }
     catch (err){
-        console.error(`Error occurred during customer data request for ${username}, returning error:\n${err.message}\n`);
+        console.error(`Error occurred during customer data request, returning error:\n${err.message}\n`);
         res.json({ error: err.message });
     }
 
@@ -537,12 +580,10 @@ app.post("/webhooks/mock", measureRoute("/webhooks/mock"),  async (req,res) => {
     try {
         check_signatures(req.get("X-Signature"),req.body);
         console.log("Signature is correct.\n");
-         const paymentId = req.body.paymentId;
 
-         if (paymentId === undefined) {
-             console.log("Payment ID is missing in the request body.\n");
-             throw new Error("Payment ID is missing in the request body.");
-         }
+        validateBody(req.body, "webhook");
+
+         const paymentId = req.body.paymentId;
 
         console.log("Payment id is ",req.body.paymentId,".\n");
 
@@ -569,7 +610,18 @@ app.post("/webhooks/mock", measureRoute("/webhooks/mock"),  async (req,res) => {
 app.get("/payments/:id",measureRoute("/payments/:id"), async (req, res) => {
 
     const paymentId = req.params.id;
+    const checkPaymentId = isUuid(paymentId);
+    if (!checkPaymentId) {
+        console.log(`The payment id: ${paymentId} is not a valid UUID.\n`);
+        throw new Error("Invalid payment id");
+    }
 
+    const sessionUserId = req.session.userId;
+
+    if (!sessionUserId) {
+        console.log(`For the payment: ${paymentId} the session didn't started.\n`);
+        throw new Error("User not logged in 2.");
+    }
     console.log(`A request was initiated to update on the status of payment the payment: ${paymentId}.\n`)
 
     const client = await pool.connect();
@@ -582,8 +634,8 @@ app.get("/payments/:id",measureRoute("/payments/:id"), async (req, res) => {
             `
             SELECT *
             FROM "payments"
-            WHERE "id" = $1
-            `, [paymentId]
+            WHERE "id" = $1 AND "userId" = $2
+            `, [paymentId, sessionUserId]
         );
 
         if (payment_data.rows.length !== 1) {
@@ -597,8 +649,8 @@ app.get("/payments/:id",measureRoute("/payments/:id"), async (req, res) => {
             `
             SELECT *
             FROM "ledger_entries"
-            WHERE "paymentId" = $1
-            `, [paymentId]
+            WHERE "paymentId" = $1 AND "userId" = $2
+            `, [paymentId, sessionUserId]
         );
 
         await client.query("COMMIT");

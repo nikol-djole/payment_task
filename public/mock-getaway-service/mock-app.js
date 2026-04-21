@@ -25,7 +25,7 @@ app.post("/mock/checkout", (req, res) => {
     try{
         check_signatures(req.get("X-Signature"),req.body);
         const paymentId = req.body.paymentId;
-        console.log(`x1b[33m Signature is valid, paymentId is ${paymentId} \n\x1b[0m`);
+        console.log(`\x1b[33m Signature is valid, paymentId is ${paymentId} \n\x1b[0m`);
 
          const gatewayPaymentId = crypto.randomUUID();
 

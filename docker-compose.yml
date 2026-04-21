@@ -34,6 +34,7 @@ services:
       DB_NAME: ${DB_NAME}
       MOCK_URL: ${MOCK_URL_DOCKER}
       SECRET_KEY: ${SECRET_KEY}
+      AUT_SECRET_KEY: ${AUT_SECRET_KEY}
       MAIL_USER: ${MAIL_USER}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
     ports:
@@ -116,6 +117,8 @@ services:
       TEST_PASSWORD: ${TEST_PASSWORD}
     command: ["node", "public/get_metrics.js"]
     profiles: ["metrics"]
+    stop_signal: SIGINT
+    stop_grace_period: 5s
 
 volumes:
   postgres_data:
